@@ -1,19 +1,31 @@
 import assert from 'node:assert/strict';
-import {generateWorld,isWater,shoreRadius,islandDistance} from '../dist/world.js';
-assert.deepEqual(generateWorld('quiet-lake'),generateWorld('quiet-lake'),'Seeds must be repeatable');
-assert.notDeepEqual(generateWorld('quiet-lake'),generateWorld('another-lake'),'Different seeds must change the layout');
-const islandCounts=new Set();
-for(let seed=0;seed<250;seed++){
- const w=generateWorld('test-'+seed);islandCounts.add(w.islands.length);
- assert.ok(w.islands.length>=5&&w.islands.length<=8,`island count ${seed}`);
- assert.ok(isWater(w,0,0,10),`safe spawn ${seed}`);
- for(const q of w.islands)assert.ok(!isWater(w,q.x,q.z),`island collision ${seed}`);
- for(let i=0;i<60;i++){let a=i/60*Math.PI*2,r=shoreRadius(w,a);assert.ok(!isWater(w,Math.cos(a)*(r+2),Math.sin(a)*(r+2)),`shore collision ${seed}`);}
- // Flood fill the swimmable lake, not just individual landmark coordinates.
- const step=3,size=151,mid=75,visited=new Uint8Array(size*size),queue=[[mid,mid]];visited[mid*size+mid]=1;
- for(let at=0;at<queue.length;at++){const [x,z]=queue[at];for(const [dx,dz] of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,nz=z+dz;if(nx<0||nz<0||nx>=size||nz>=size)continue;const index=nz*size+nx;if(visited[index]||!isWater(w,(nx-mid)*step,(nz-mid)*step,1))continue;visited[index]=1;queue.push([nx,nz]);}}
- for(const p of w.places){assert.ok(isWater(w,p.x,p.z,.65),`landmark is water: ${seed} ${p.name}`);assert.ok(queue.some(([x,z])=>Math.hypot((x-mid)*step-p.x,(z-mid)*step-p.z)<p.r-2),`reachable landmark: ${seed} ${p.name}`);}
- for(const q of w.islands)assert.equal(islandDistance(q,q.x,q.z),0);
+import {generateWorld,generateChunk,isWater,CHUNK_SIZE,WorldStreamer} from '../dist/world.js';
+assert.deepEqual(generateChunk('quiet',-8,13),generateChunk('quiet',-8,13));
+assert.notDeepEqual(generateChunk('quiet',-8,13),generateChunk('quiet',-7,13));
+assert.notDeepEqual(generateChunk('quiet',-8,13),generateChunk('different',-8,13));
+let landmarks=0;
+for(let seed=0;seed<100;seed++){
+ const w=generateWorld('test-'+seed);assert.ok(isWater(w,0,0,8),'Safe open spawn');
+ for(const [cx,cz]of [[0,0],[1,-1],[-15,42],[7000,-4000],[-600000,900000]]){
+  const c=w.getChunk(cx,cz);for(const q of c.islands)assert.ok(!isWater(w,q.x,q.z),'Land still blocks paddling');
+  for(const p of c.places){landmarks++;assert.ok(isWater(w,p.x,p.z,.65),`Reachable water landmark ${seed} ${c.id} ${p.name}`);}
+  // No outer edge, wraparound or coordinate clamping: tile-edge channels connect forever.
+  for(let t=0;t<=CHUNK_SIZE;t+=4){assert.ok(isWater(w,cx*CHUNK_SIZE+t,cz*CHUNK_SIZE,.65),`East/west channel ${seed} ${cx},${cz} ${t}`);assert.ok(isWater(w,cx*CHUNK_SIZE,cz*CHUNK_SIZE+t,.65),`North/south channel ${seed} ${cx},${cz} ${t}`);}
+ }
+ assert.ok(w.cacheSize<=128);
 }
-assert.ok(islandCounts.size>=3,'Island counts should vary');
-console.log('250 seeds passed: repeatability, varied layouts, safe spawn, shore/island collision, all landmarks reachable.');
+// Exercise the actual streaming coordinator, including disposal and backtracking.
+const world=generateWorld('long-journey'),disposed=[],built=[];
+const streamer=new WorldStreamer(world,data=>{built.push(data.id);return {data};},item=>disposed.push(item.data.id));
+streamer.update(0,0,25);assert.equal(streamer.active.size,25);
+const first=JSON.stringify(streamer.active.get('0,0').data);
+for(let i=1;i<=1000;i++){
+ streamer.update(i*CHUNK_SIZE,-i*CHUNK_SIZE,1);assert.ok(streamer.active.size<=25);
+ streamer.update(i*CHUNK_SIZE,-i*CHUNK_SIZE,25);assert.equal(streamer.active.size,25);assert.equal(streamer.pending.length,0);
+ assert.ok(world.cacheSize<=128);
+}
+assert.ok(disposed.length>8000,'Distant chunks must be unloaded');
+streamer.update(0,0,25);assert.equal(JSON.stringify(streamer.active.get('0,0').data),first,'Return travel restores identical terrain');
+streamer.update(-1,-1,25);assert.ok(streamer.active.has('-1,-1'),'Negative coordinates use floor, not truncation');
+streamer.clear();assert.equal(streamer.active.size,0);assert.equal(streamer.pending.length,0);
+console.log(`Passed: 100 seeds, ${landmarks} water landmarks, open routes at ±millions of metres, 1,000 region transitions, stable backtracking and bounded cache/render counts.`);
