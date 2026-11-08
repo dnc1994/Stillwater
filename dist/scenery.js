@@ -14,12 +14,27 @@ export function createScenery(world,materials,duckTemplate){
  function weatherTexture(kind){const size=128,pixels=new Uint8Array(size*size*4),noise=randomFor('stillwater-'+kind);for(let y=0;y<size;y++)for(let x=0;x<size;x++){const i=(y*size+x)*4,n=noise(),patch=Math.sin(x*.11+Math.sin(y*.08)*2)*Math.cos(y*.16),damp=Math.max(0,1-y/45);let rgb;if(kind==='rust')rgb=patch>.25?[70+n*27,90+n*22,77+n*20]:[105+n*60,65+n*35,40+n*30];else rgb=[225-damp*55+n*15,224-damp*48+n*14,205-damp*42+n*13];pixels.set([...rgb,255],i);}const t=new THREE.DataTexture(pixels,size,size);t.colorSpace=THREE.SRGBColorSpace;t.wrapS=t.wrapT=THREE.RepeatWrapping;t.magFilter=THREE.LinearFilter;t.minFilter=THREE.LinearMipmapLinearFilter;t.generateMipmaps=true;t.needsUpdate=true;return t;}
  rust.map=weatherTexture('rust');rust.color.set(0xffffff);rust.bumpMap=rust.map;rust.bumpScale=.025;plaster.map=weatherTexture('plaster');plasterWarm.map=plaster.map;
  const terrainMat=earth.clone();terrainMat.vertexColors=true;terrainMat.color.set(0xd1d7bd);
+ // Exposed wet silt at the waterline, transitioning into the grass bank.
+ terrainMat.onBeforeCompile=shader=>{
+  shader.vertexShader='varying vec3 bankPosition;\n'+shader.vertexShader;
+  shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nbankPosition=position;');
+  shader.fragmentShader='varying vec3 bankPosition;\n'+shader.fragmentShader;
+  shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>',`#include <map_fragment>
+   float grain=sin(bankPosition.x*37.0+sin(bankPosition.z*19.0))*sin(bankPosition.z*43.0)*.025;
+   float grassLine=smoothstep(.12,.85,bankPosition.y+sin(bankPosition.x*.8)*.08);
+   diffuseColor.rgb=mix(vec3(.115,.105,.074)+grain,diffuseColor.rgb,grassLine);`);
+ };
+ terrainMat.customProgramCacheKey=()=> 'wet-silt-v1';
  const dummy=new THREE.Object3D(),color=new THREE.Color();
  const transform=(x,y,z,sx=1,sy=1,sz=1,rx=0,ry=0,rz=0)=>[x,y,z,sx,sy,sz,rx,ry,rz];
  function make(g,m,t,parent){const o=new THREE.Mesh(g,m);o.position.set(...t.slice(0,3));o.scale.set(...t.slice(3,6));o.rotation.set(...t.slice(6,9));o.castShadow=o.receiveShadow=true;parent.add(o);return o;}
  return {build(data){
   const group=new THREE.Group(),owned=[],birds=[],r=randomFor(world.seed+':rural-art:'+data.id),range=(a,b)=>a+r()*(b-a),lx=x=>x-data.x,lz=z=>z-data.z;
-  const inst=(geo,material,arr)=>{if(!arr.length)return;const b=new THREE.InstancedMesh(geo,material,arr.length);b.castShadow=b.receiveShadow=true;arr.forEach((t,i)=>{dummy.position.set(...t.slice(0,3));dummy.scale.set(...t.slice(3,6));dummy.rotation.set(...t.slice(6,9));dummy.updateMatrix();b.setMatrixAt(i,dummy.matrix);});b.computeBoundingSphere();group.add(b);return b;};
+  const inst=(geo,material,arr)=>{if(!arr.length)return;const b=new THREE.InstancedMesh(geo,material,arr.length);b.castShadow=b.receiveShadow=true;arr.forEach((t,i)=>{dummy.position.set(...t.slice(0,3));dummy.scale.set(...t.slice(3,6));dummy.rotation.set(...t.slice(6,9));dummy.updateMatrix();b.setMatrixAt(i,dummy.matrix);
+   if([foliage,reed,rice,gold,padMat,duckweed].includes(material)){
+    const variation=.78+.3*(Math.sin(t[0]*12.9898+t[2]*78.233)*43758.5453%1+1)/2;
+    color.setRGB(variation,variation,variation*.94);b.setColorAt(i,color);
+   }});b.computeBoundingSphere();group.add(b);return b;};
   const add=(g,m,x,y,z,sx=1,sy=1,sz=1,rx=0,ry=0,rz=0,parent=group)=>make(g,m,transform(x,y,z,sx,sy,sz,rx,ry,rz),parent);
   // One continuous elevation field; adjacent chunks sample identical edges.
   const vertices=[],uv=[],colors=[],indices=[],n=64,step=160/n;
@@ -40,7 +55,7 @@ export function createScenery(world,materials,duckTemplate){
    const base=terrainHeight(world,x,z),willow=data.biome!==3&&r()<.65,h=range(7,14),xx=lx(x),zz=lz(z);treeCount++;
    if(data.biome===3){for(let j=0;j<6;j++){const ax=xx+range(-1.8,1.8),az=zz+range(-1.8,1.8),bh=range(7,13);canes.push(transform(ax,base+bh/2,az,.09,bh,.09,range(-.07,.07),0,range(-.07,.07)));for(let k=1;k<bh;k+=.8)nodes.push(transform(ax,base+k,az,.115,.08,.115));for(let k=0;k<70;k++){const a=r()*6.28,rad=range(.4,2.2);leaves.push(transform(ax+Math.cos(a)*rad,base+bh-range(0,4),az+Math.sin(a)*rad,.18,.4,range(.3,.65),r()*2,r()*6.28,r()*2));}}}
    else{trunks.push(transform(xx,base+h*.4,zz,.32,h*.8,.32,0,0,.05));for(let j=0;j<5;j++){const a=j/5*6.28;trunks.push(transform(xx+Math.cos(a)*1.2,base+h*.68,zz+Math.sin(a)*1.2,.13,h*.35,.13,Math.sin(a)*.7,0,Math.cos(a)*.7));}
-    for(let j=0;j<360;j++){const a=r()*6.28,t=Math.cbrt(r()),v=range(-1,1),w=Math.sqrt(1-v*v),rad=h*.36*t;const y=willow?base+h*.88-(rad/(h*.36))**2*h*.44+v*h*.14:base+h*.8+v*t*h*.3;leaves.push(transform(xx+Math.cos(a)*w*rad,y,zz+Math.sin(a)*w*rad,willow?.18:.38,.4,willow?.75:.48,willow?1.1:r()*3,r()*6.28,r()*3));}
+    for(let j=0;j<760;j++){const a=r()*6.28,t=Math.cbrt(r()),v=range(-1,1),w=Math.sqrt(1-v*v),rad=h*.36*t;const y=willow?base+h*.88-(rad/(h*.36))**2*h*.44+v*h*.14:base+h*.8+v*t*h*.3;leaves.push(transform(xx+Math.cos(a)*w*rad,y,zz+Math.sin(a)*w*rad,willow?.18:.38,.4,willow?.75:.48,willow?1.1:r()*3,r()*6.28,r()*3));}
     if(willow)for(let j=0;j<28;j++){const a=r()*6.28,rad=range(h*.2,h*.33),length=range(1.5,4);canes.push(transform(xx+Math.cos(a)*rad,base+h*.65-length/2,zz+Math.sin(a)*rad,.018,length,.018));}
    }
   }
