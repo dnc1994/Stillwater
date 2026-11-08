@@ -10,7 +10,8 @@ Built with Three.js and vanilla JavaScript. The game runs entirely in the browse
 - **A view from the water.** Ride 42 cm above the surface on the duck’s back, or switch to an unobstructed 23 cm waterline view.
 - **A living countryside.** Discover stone arches, timber crossings, fishing skiffs, flooded paddies, whitewashed houses, and sheltered aquatic gardens.
 - **Gentle movement and atmosphere.** Drift, paddle, or cruise automatically, with subtle camera motion, rippling reflections, a trailing wake, and morning or golden-hour light.
-- **A map and discovery journal.** See nearby waterways and keep track of quiet places found during your session.
+- **Quack, follow, discover.** Befriend a curious duck, follow it to a quiet spot, invite ducklings along, or dabble to reveal a shoal of fish. Companions wait when you linger and navigate around banks and barges.
+- **A map and discovery journal.** See nearby waterways, your friend’s route, and a journal of little memories from your session.
 - **Desktop and touch controls.** Adjust rendering quality and disable camera bob for comfort.
 
 The visual style uses procedural geometry and naturalistic materials; it is not a photogrammetry-based environment.
@@ -35,12 +36,20 @@ Open [localhost:5187](http://localhost:5187). No package installation is require
 | S / ↓ | Paddle backward |
 | A / ← and D / → | Turn |
 | Drag on the scene | Look around |
-| Space | Quack |
+| Space | Quack / greet ducks / invite ducklings |
+| E | Dabble and scatter fish |
+| Shift | Short paddle burst |
 | P | Toggle automatic paddling |
 | M | Open or close the map |
 | H | Toggle the main interface |
 
-On small screens, use the on-screen paddling and quack buttons. Settings include viewpoint, lighting, rendering quality, camera bob, and a return to the starting point.
+On small screens, use the on-screen paddling controls and the Quack, Dabble, and Splash buttons. Settings include viewpoint, lighting, rendering quality, camera bob, and a return to the starting point.
+
+## A little adventure
+
+Quack to the curious duck near the starting point. Follow it to a sheltered bend and quack again when you hear about ducklings in the reeds. They will fall in behind you. On later outings your friend can lead you to a fish shoal; dabble nearby to see it scatter.
+
+Your friend waits if you stop. Auto-paddling pauses when you arrive at an encounter. The map shows your friend and their route, and records up to 64 recent memories. You can ignore any invitation and wander freely. Companions are local to your journey; returning to the starting point or travelling far away lets you meet another duck.
 
 ## World seeds
 
@@ -64,12 +73,15 @@ dist/
   world.js            Seeded terrain, waterways, collisions, and chunk streaming
   scenery.js          Vegetation, buildings, bridges, boats, and scenery batches
   duck.js             Duck model and feather materials
+  encounters.js       Companion behaviour, safe routes, and encounter state
+  wildlife.js         Guide duck, ducklings, and fish animations
   water-surface.js    Water geometry, ripple shading, and wake
   assets/             Bundled textures
   vendor/             Three.js and its sky/water helpers
 tests/
   world.test.mjs      Procedural generation and navigation checks
   scenery.test.mjs    Geometry and resource lifecycle checks
+  encounters.test.mjs Companion journeys, interactions, and safe navigation
 ```
 
 The world streams a moving 5×5 window of 160-metre chunks. Adjacent chunks share a continuous terrain field, while bounded caches and disposal of unloaded GPU resources keep exploration from accumulating the entire world in memory. Instanced scenery reduces draw calls, and a floating render origin preserves local coordinate precision as you travel.
@@ -81,6 +93,7 @@ With a current Node.js release installed:
 ```sh
 node tests/world.test.mjs
 node tests/scenery.test.mjs
+node tests/encounters.test.mjs
 ```
 
 The checks cover repeatable seeds, connected waterways, reachable backwaters, shared terrain edges, distant coordinates, chunk streaming, cache limits, finite geometry, and resource disposal. Camera, lighting, and water changes also need a visual browser check.

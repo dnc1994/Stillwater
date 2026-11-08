@@ -10,3 +10,12 @@
 .playing .journal-line{margin:0 0 4px}
 .playing header .brand small{display:none}
 @media(max-width:700px){.playing .journal{bottom:125px;right:14px;max-width:180px}.playing .journal small{font-size:10px}}
+
+#encounter{display:none;position:fixed;left:50%;bottom:90px;transform:translateX(-50%);max-width:420px;width:calc(100% - 40px);text-align:center;text-shadow:0 1px 5px #102e27}
+.playing #encounter{display:block}.hide-ui #encounter{display:none}
+#encounter p{font-size:13px;line-height:1.5;color:#fff8e6;margin:0 0 10px}
+.duck-actions{display:flex;justify-content:center;gap:8px}.duck-actions button{border-radius:24px;padding:9px 15px;background:#173d3780;font-size:12px}.duck-actions kbd{margin-left:4px;padding:2px 4px;font-size:9px;opacity:.7}
+#companions{display:block;font-size:10px;letter-spacing:.6px;margin-top:8px;color:#e9d9ad;min-height:12px}.moment-count{display:block;margin-top:6px;color:#e9d9ad}
+#memories{font-size:13px;line-height:1.7;padding-left:20px;max-width:540px;color:#e7dfc9}#map h3{font:400 23px 'Playfair Display',serif;margin-bottom:10px}
+@media(max-width:1000px){#encounter{bottom:105px;max-width:340px}.playing .journal{bottom:225px;right:16px;max-width:180px;font-size:12px}}
+@media(max-width:700px){#encounter{bottom:210px;max-width:320px}#encounter p{font-size:12px}.duck-actions button{padding:10px 13px}.duck-actions kbd{display:none}.playing .journal{bottom:110px;max-width:155px}.playing .journal small{font-size:9px}.playing #touch{bottom:48px}#toast{top:18%;width:calc(100% - 40px);font-size:13px;padding:14px}}
