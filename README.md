@@ -1,25 +1,113 @@
 # Stillwater
 
-A first-person duck exploration game built in Three.js, served as a static website.
+A quiet exploration game from a duck’s point of view. Paddle through an endless countryside of winding creeks, lotus ponds, old bridges, waterside villages, and abandoned barges. There’s no destination to reach—just another bend in the river.
 
-Run locally with `python3 -m http.server 5187 --directory dist` and open http://localhost:5187.
+Built with Three.js and vanilla JavaScript. The game runs entirely in the browser and ships as a static site, with no build step or backend.
 
-Controls: WASD / arrows to paddle and turn, drag to look, Space to quack, P for auto-paddle, M for the map, H to hide the interface. Touch controls are included. Settings offer morning/golden-hour lighting, reduced rendering resolution, camera bob, and a return to open water.
+## Features
 
-The world is an endless seeded Chinese-countryside-inspired waterway network. Connected meandering rivers lead into narrow creeks, irregular ponds and looping backwaters. Six landscape districts vary the setting: canal villages, lotus backwaters, old freight reaches, bamboo creeks, rice-paddy country and reed marshes. There is no outer shoreline, world-radius collision, wraparound, or final discovery count.
+- **Endless, seeded exploration.** Connected waterways lead through six landscapes: canal villages, lotus backwaters, old freight reaches, bamboo creeks, rice-paddy country, and reed marshes.
+- **A view from the water.** Ride 42 cm above the surface on the duck’s back, or switch to an unobstructed 23 cm waterline view.
+- **A living countryside.** Discover stone arches, timber crossings, fishing skiffs, flooded paddies, whitewashed houses, and sheltered aquatic gardens.
+- **Gentle movement and atmosphere.** Drift, paddle, or cruise automatically, with subtle camera motion, rippling reflections, a trailing wake, and morning or golden-hour light.
+- **A map and discovery journal.** See nearby waterways and keep track of quiet places found during your session.
+- **Desktop and touch controls.** Adjust rendering quality and disable camera bob for comfort.
 
-Scenery includes curved-eave whitewashed houses, mooring steps, stone arch bridges and timber crossings, weathered abandoned barges with open holds and cargo, fishing skiffs, flooded rice terraces, bamboo, drooping willows, cattails, grasses, lotus, arrowhead leaves and duckweed. Barge hulls have oriented collision; bridges preserve water clearance. The map stays centered on the duck and shows nearby places; discovered places remain marked for the session.
+The visual style uses procedural geometry and naturalistic materials; it is not a photogrammetry-based environment.
 
-Settings → Generate a new world changes the seed. A bookmarked seed recreates the same geography, including regions revisited after they unload. Return to starting point brings the duck back to the origin.
+## Run locally
 
-`dist/world.js` samples continuous world-space water and elevation fields and places seeded features in 160 m regions. Shared edge samples keep the terrain seamless. Ponds vary by landscape and can have two creek connections; some agricultural regions omit ponds entirely. `WorldStreamer` retains a moving 5×5 window, builds incoming regions incrementally, and disposes outgoing geometry and instance buffers. A bounded 128-entry layout cache and bounded channel/pond caches prevent growth with travel. Static prop pieces are instanced to keep draw calls manageable. World coordinates are retained for navigation, while a floating render origin keeps GPU coordinates small. The water, sky, lighting and particles follow the duck.
+You need Python 3 and a modern browser with WebGL and hardware acceleration enabled.
 
-Run `node tests/world.test.mjs` for seed repeatability, distant/negative-coordinate channels, safe landmarks, backwater flood-fill reachability around barges, 500 streaming transitions, backtracking and cache limits. Run `node tests/scenery.test.mjs` for real Three.js chunk geometry, finite bounds and resource disposal.
+```sh
+git clone https://github.com/dnc1994/Stillwater.git
+cd Stillwater
+python3 -m http.server 5187 --directory dist
+```
 
-Rendering uses procedural game geometry and materials; this is a real-time naturalistic scene, not a photographic environment scan. WebGL and hardware acceleration are required.
+Open [localhost:5187](http://localhost:5187). No package installation is required. Serve the files over HTTP rather than opening `index.html` directly, because the game uses JavaScript modules.
 
-Third-party assets: Three.js r170 (MIT; license in dist/vendor/LICENSE.txt), water normals and grass texture from the Three.js examples. DM Sans and Playfair Display are loaded from Google Fonts with system-font fallbacks.
+## Controls
 
-The reference-inspired camera sits 42 cm above the water on the duck’s back, with a 76° vertical field of view, textured brown plumage and restrained head/float motion. Settings → Viewpoint also offers an unobstructed 23 cm waterline view; Camera bob can be disabled. Cruising speed is 2.1 m/s. Clear morning is the default, with golden hour available in settings.
+| Input | Action |
+| --- | --- |
+| W / ↑ | Paddle forward |
+| S / ↓ | Paddle backward |
+| A / ← and D / → | Turn |
+| Drag on the scene | Look around |
+| Space | Quack |
+| P | Toggle automatic paddling |
+| M | Open or close the map |
+| H | Toggle the main interface |
 
-Water combines planar reflections, small geometric waves, layered surface normals and a speed-sensitive V wake. Sky environment lighting, tighter near-field shadows, wet bank silt and varied foliage improve the low-angle view. The bundled duck feather texture is AI-generated. The scenery remains procedural real-time geometry rather than photogrammetry.
+On small screens, use the on-screen paddling and quack buttons. Settings include viewpoint, lighting, rendering quality, camera bob, and a return to the starting point.
+
+## World seeds
+
+Each world is generated from the `seed` in its URL:
+
+```text
+http://localhost:5187/?seed=jiangnan
+```
+
+Bookmark or share the URL to revisit the same geography. Enter a seed or choose **Generate a new world** in Settings to explore somewhere else. Discoveries and your current position are session-only; a seed recreates the landscape, not a saved playthrough.
+
+## Development
+
+Edit the files in `dist/` and reload the browser. Despite its name, this directory contains the maintained game source as well as the assets served to players.
+
+```text
+dist/
+  index.html          Page structure and controls
+  style.css           Interface styling
+  game.js             Game loop, input, camera, lighting, audio, and map
+  world.js            Seeded terrain, waterways, collisions, and chunk streaming
+  scenery.js          Vegetation, buildings, bridges, boats, and scenery batches
+  duck.js             Duck model and feather materials
+  water-surface.js    Water geometry, ripple shading, and wake
+  assets/             Bundled textures
+  vendor/             Three.js and its sky/water helpers
+tests/
+  world.test.mjs      Procedural generation and navigation checks
+  scenery.test.mjs    Geometry and resource lifecycle checks
+```
+
+The world streams a moving 5×5 window of 160-metre chunks. Adjacent chunks share a continuous terrain field, while bounded caches and disposal of unloaded GPU resources keep exploration from accumulating the entire world in memory. Instanced scenery reduces draw calls, and a floating render origin preserves local coordinate precision as you travel.
+
+### Run checks
+
+With a current Node.js release installed:
+
+```sh
+node tests/world.test.mjs
+node tests/scenery.test.mjs
+```
+
+The checks cover repeatable seeds, connected waterways, reachable backwaters, shared terrain edges, distant coordinates, chunk streaming, cache limits, finite geometry, and resource disposal. Camera, lighting, and water changes also need a visual browser check.
+
+## Deploy
+
+Serve the contents of `dist/` with any static web host. No server functions, environment variables, or build dependencies are required.
+
+For **Cloudflare Pages**, connect this GitHub repository and use:
+
+| Setting | Value |
+| --- | --- |
+| Production branch | `master` |
+| Framework preset | None |
+| Build command | `exit 0` |
+| Build output directory | `dist` |
+| Root directory | Repository root (leave blank) |
+
+Enable automatic production deployments to publish future pushes to `master`. These are Pages settings; Cloudflare Workers uses a separate deployment setup.
+
+The local `.openai/` folder contains hosting metadata from the original development environment. It is ignored by Git and is not required to run or deploy the game.
+
+## Credits
+
+- **Three.js r170**, including the Sky and Water helpers: MIT licensed. See [the bundled license](dist/vendor/LICENSE.txt).
+- **Grass and water-normal textures:** sourced from the Three.js examples.
+- **Duck feather texture:** AI-generated for this project.
+- **DM Sans and Playfair Display:** loaded from Google Fonts, with system-font fallbacks.
+
+Game code and textures are served locally by the host; Google Fonts is the only external presentation asset request.
