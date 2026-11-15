@@ -1,24 +1,44 @@
-# Stillwater
+# 止水 Stillwater
 
-A quiet exploration game from a duck’s point of view. Paddle through an endless countryside of winding creeks, lotus ponds, old bridges, waterside villages, and abandoned barges. There’s no destination to reach—just another bend in the river.
+Be a duck. Drift through one slow day on a river in Jiangnan.
 
-Built with Three.js and vanilla JavaScript. The game runs entirely in the browser and ships as a static site, with no build step or backend.
+The camera rides on your back, a hand's width above the water, the way it does in those videos where someone straps a camera to a real duck and lets it swim through a village. White walls and black tiles slide past, a stone bridge closes into a full circle with its own reflection, and nothing needs doing.
 
-## Features
+Built with Three.js and plain JavaScript modules. It is a static site: no build step, no backend, no audio or model files. Everything you see and hear is generated in the browser.
 
-- **Endless, seeded exploration.** Connected waterways lead through six landscapes: canal villages, lotus backwaters, old freight reaches, bamboo creeks, rice-paddy country, and reed marshes.
-- **A view from the water.** Ride 42 cm above the surface on the duck’s back, or switch to an unobstructed 23 cm waterline view.
-- **A living countryside.** Discover stone arches, timber crossings, fishing skiffs, flooded paddies, whitewashed houses, and sheltered aquatic gardens.
-- **Gentle movement and atmosphere.** Drift, paddle, or cruise automatically, with subtle camera motion, rippling reflections, a trailing wake, and morning or golden-hour light.
-- **Quack, follow, discover.** Befriend a curious duck, follow it to a quiet spot, invite ducklings along, or dabble to reveal a shoal of fish. Companions wait when you linger and navigate around banks and barges.
-- **A map and discovery journal.** See nearby waterways, your friend’s route, and a journal of little memories from your session.
-- **Desktop and touch controls.** Adjust rendering quality and disable camera bob for comfort.
+## What there is to do
 
-The visual style uses procedural geometry and naturalistic materials; it is not a photogrammetry-based environment.
+It can still be played as a slow drift. But the duck now has three proper verbs, and the river is full of reasons to use them.
 
-## Run locally
+- **Fly.** Hold `Shift` to run flapping across the water and lift off. Keep flapping to climb, let go to glide, push forward to dive, and touch the water to land in a skid of spray. You can thread the stone arches, skim the rooftops, and see the fields from above. Your two companions take off with you; ducklings come flapping after once you land.
+- **Dive.** `E` puts your head under for eight seconds. Paddle about down there: eat river snails off the bed, lunge with `Shift` to catch a fish, and look for eight small things people have dropped in the river over the years. A glint on the surface marks each one.
+- **Beg and scramble.** People on the bank throw bread, and sooner if you quack at them. Your companions want it as much as you do.
+- **Find six lost ducklings.** You hear them before you see them, and your head turns towards the sound. Quack and they fall into line.
+- **Collect seals.** Thirteen small feats, each stamped in red in the journal: three arches in one flight, a long landing skid, an echo under a bridge, a clean sweep of the bread.
+- **Keep a journal.** Twenty-two things to come across, each with a line of text. Journal, seals and finds are saved in the browser.
+- **Drift, take photos, watch the day turn.** `F` lets the current carry you; `C` takes a duck-cam photo; a day runs dawn to lantern-lit night in about fifteen minutes, with the odd drizzle, and `T` skips ahead.
 
-You need Python 3 and a modern browser with WebGL and hardware acceleration enabled.
+The river is one closed loop through six stretches: the old town, a bank of willow and peach blossom, a lotus pond with a pavilion, a bamboo creek, an open reed marsh, and rice and rapeseed fields. A narrow back creek cuts from the town to the pond.
+
+## Controls
+
+| Input | Action |
+| --- | --- |
+| `W` `A` `S` `D` or arrows | Paddle and turn. In the air: `W` dives, `S` slows, `A` `D` bank |
+| Hold `Shift` | Run across the water and take off; flap while flying; lunge while underwater |
+| `E` | Dive, or come back up |
+| `Space` | Quack |
+| Drag | Look around |
+| `F` | Drift with the current |
+| `C` | Photo |
+| `T` | Skip to the next part of the day |
+| `J` or `Tab` | Journal, seals and finds |
+| `M` | Mute |
+| `H` | Hide the interface |
+
+On a phone there is a thumb stick and four buttons (hold the fly button to flap). The interface is in Chinese or English; the button in the corner switches.
+
+## Run it
 
 ```sh
 git clone https://github.com/dnc1994/Stillwater.git
@@ -26,101 +46,54 @@ cd Stillwater
 python3 -m http.server 5187 --directory dist
 ```
 
-Open [localhost:5187](http://localhost:5187). No package installation is required. Serve the files over HTTP rather than opening `index.html` directly, because the game uses JavaScript modules.
+Open <http://localhost:5187>. It has to be served over HTTP because it uses JavaScript modules. Any modern browser with WebGL 2 works.
 
-## Controls
+A different countryside: add a name after `#`, for example `http://localhost:5187/#wuzhen`. The same name always gives the same river.
 
-| Input | Action |
-| --- | --- |
-| W / ↑ | Paddle forward |
-| S / ↓ | Paddle backward |
-| A / ← and D / → | Turn |
-| Drag on the scene | Look around |
-| Space | Quack / greet ducks / invite ducklings |
-| E | Dabble and scatter fish |
-| Shift | Short paddle burst |
-| P | Toggle automatic paddling |
-| M | Open or close the map |
-| H | Toggle the main interface |
-
-On small screens, use the on-screen paddling controls and the Quack, Dabble, and Splash buttons. Settings include viewpoint, lighting, rendering quality, camera bob, and a return to the starting point.
-
-## A little adventure
-
-Quack to the curious duck near the starting point. Follow it to a sheltered bend and quack again when you hear about ducklings in the reeds. They will fall in behind you. On later outings your friend can lead you to a fish shoal; dabble nearby to see it scatter.
-
-Your friend waits if you stop. Auto-paddling pauses when you arrive at an encounter. The map shows your friend and their route, and records up to 64 recent memories. You can ignore any invitation and wander freely. Companions are local to your journey; returning to the starting point or travelling far away lets you meet another duck.
-
-## World seeds
-
-Each world is generated from the `seed` in its URL:
-
-```text
-http://localhost:5187/?seed=jiangnan
-```
-
-Bookmark or share the URL to revisit the same geography. Enter a seed or choose **Generate a new world** in Settings to explore somewhere else. Discoveries and your current position are session-only; a seed recreates the landscape, not a saved playthrough.
-
-## Development
-
-Edit the files in `dist/` and reload the browser. Despite its name, this directory contains the maintained game source as well as the assets served to players.
+## How it is put together
 
 ```text
 dist/
-  index.html          Page structure and controls
-  style.css           Interface styling
-  game.js             Game loop, input, camera, lighting, audio, and map
-  world.js            Seeded terrain, waterways, collisions, and chunk streaming
-  scenery.js          Vegetation, buildings, bridges, boats, and scenery batches
-  duck.js             Duck model and feather materials
-  encounters.js       Companion behaviour, safe routes, and encounter state
-  wildlife.js         Guide duck, ducklings, and fish animations
-  water-surface.js    Water geometry, ripple shading, and wake
-  assets/             Bundled textures
-  vendor/             Three.js and its sky/water helpers
+  index.html      Page and interface markup
+  style.css       Interface styling
+  src/
+    main.js       Input, paddling, flight, diving, the camera on the duck's back, the frame loop
+    world.js      The river loop, banks, terrain and where everything stands (no three.js)
+    scenery.js    Terrain mesh, houses, bridges, boats, trees, reeds, lotus
+    sky.js        Day cycle, light, mist, sky dome, far hills, rain state
+    water.js      Planar reflection, ripples, expanding rings
+    duck.js       Ducks, ducklings, egrets, frogs, fish
+    life.js       Companions, ducklings, wildlife, bread, riverbed finds, the boatman, rain, fireflies
+    audio.js      All sound, synthesised with Web Audio
+    build.js      Helpers for building low-poly models from coloured primitives
+    text.js       Every string, in Chinese and English
+  assets/         One water normal map
+  vendor/         Three.js r170 and its Water helper
 tests/
-  world.test.mjs      Procedural generation and navigation checks
-  scenery.test.mjs    Geometry and resource lifecycle checks
-  encounters.test.mjs Companion journeys, interactions, and safe navigation
+  world.test.mjs  Checks on the generated world
 ```
 
-The world streams a moving 5×5 window of 160-metre chunks. Adjacent chunks share a continuous terrain field, while bounded caches and disposal of unloaded GPU resources keep exploration from accumulating the entire world in memory. Instanced scenery reduces draw calls, and a floating render origin preserves local coordinate precision as you travel.
+A few notes for anyone changing it:
 
-### Run checks
+- `world.js` describes the land as a signed distance to the bank, stored on a 2 m grid. Collision, terrain height, the shoreline tint in the water shader, and every placement decision read from that one grid.
+- Scenery is merged or instanced, so the whole scene is about 70 draw calls. The costly part is the reflection, which draws the scene a second time; `water.js` leaves small things out of that pass and, on slower machines, refreshes it every other frame.
+- If frames run slow, `main.js` lowers the resolution and then turns shadows off on its own.
+- A flying duck is kept above the ground, roofs and bridge decks by `clearance()` in `main.js`; trees are not obstacles.
+- The game has only been checked in headless Chrome with software rendering. Frame rate and the feel of the flight controls on real hardware have not been measured.
 
-With a current Node.js release installed:
+### Checks
 
 ```sh
 node tests/world.test.mjs
-node tests/scenery.test.mjs
-node tests/encounters.test.mjs
 ```
 
-The checks cover repeatable seeds, connected waterways, reachable backwaters, shared terrain edges, distant coordinates, chunk streaming, cache limits, finite geometry, and resource disposal. Camera, lighting, and water changes also need a visual browser check.
+These confirm, for several seeds, that the river is one navigable loop, that nothing meant to float is on land and nothing meant to stand is in the water, and that the map has no leaks at its edges. Anything visual still needs a look in a browser.
 
 ## Deploy
 
-Serve the contents of `dist/` with any static web host. No server functions, environment variables, or build dependencies are required.
-
-For **Cloudflare Pages**, connect this GitHub repository and use:
-
-| Setting | Value |
-| --- | --- |
-| Production branch | `master` |
-| Framework preset | None |
-| Build command | `exit 0` |
-| Build output directory | `dist` |
-| Root directory | Repository root (leave blank) |
-
-Enable automatic production deployments to publish future pushes to `master`. These are Pages settings; Cloudflare Workers uses a separate deployment setup.
-
-The local `.openai/` folder contains hosting metadata from the original development environment. It is ignored by Git and is not required to run or deploy the game.
+Serve `dist/` from any static host. For Cloudflare Pages: framework preset none, build command `exit 0`, output directory `dist`.
 
 ## Credits
 
-- **Three.js r170**, including the Sky and Water helpers: MIT licensed. See [the bundled license](dist/vendor/LICENSE.txt).
-- **Grass and water-normal textures:** sourced from the Three.js examples.
-- **Duck feather texture:** AI-generated for this project.
-- **DM Sans and Playfair Display:** loaded from Google Fonts, with system-font fallbacks.
-
-Game code and textures are served locally by the host; Google Fonts is the only external presentation asset request.
+- Three.js r170 and its Water helper, MIT licensed. See `dist/vendor/LICENSE.txt`.
+- The water normal map comes from the Three.js examples.
