@@ -4,7 +4,7 @@ Be a duck. Drift through one slow day on a river in Jiangnan.
 
 The camera rides on your back, a hand's width above the water, the way it does in those videos where someone straps a camera to a real duck and lets it swim through a village. White walls and black tiles slide past, a stone bridge closes into a full circle with its own reflection, and nothing needs doing.
 
-Built with Three.js and plain JavaScript modules. It is a static site: no build step, no backend, no audio or model files. Everything you see and hear is generated in the browser.
+Built with Three.js and plain JavaScript modules. It is a static site: no build step, no backend, and no image, audio or model files beyond one water normal map. Everything else you see and hear is generated in the browser.
 
 ## What there is to do
 
@@ -59,13 +59,17 @@ dist/
   src/
     main.js       Input, paddling, flight, diving, the camera on the duck's back, the frame loop
     world.js      The river loop, banks, terrain and where everything stands (no three.js)
-    scenery.js    Terrain mesh, houses, bridges, boats, trees, reeds, lotus
+    scenery.js    Puts the land, town, props and plants together
+    town.js       Houses, shopfronts, bridges, quays, the covered walk, pavilion and pagoda
+    plants.js     Trees, bamboo, reeds, lotus, crops and floating petals, built from leaf cards
+    tex.js        Every texture, painted on canvases at start-up: plaster, tile, stone, wood, lattice, leaves, feathers
+    post.js       The lens: low mist, light shafts, bloom, tone and colour, vignette, grain
     sky.js        Day cycle, light, mist, sky dome, far hills, rain state
-    water.js      Planar reflection, ripples, expanding rings
+    water.js      Planar reflection, ripples, expanding rings, clear shallows
     duck.js       Ducks, ducklings, egrets, frogs, fish
     life.js       Companions, ducklings, wildlife, bread, riverbed finds, the boatman, rain, fireflies
     audio.js      All sound, synthesised with Web Audio
-    build.js      Helpers for building low-poly models from coloured primitives
+    build.js      Helpers for building models from coloured, textured primitives
     text.js       Every string, in Chinese and English
   assets/         One water normal map
   vendor/         Three.js r170 and its Water helper
@@ -76,8 +80,10 @@ tests/
 A few notes for anyone changing it:
 
 - `world.js` describes the land as a signed distance to the bank, stored on a 2 m grid. Collision, terrain height, the shoreline tint in the water shader, and every placement decision read from that one grid.
-- Scenery is merged or instanced, so the whole scene is about 70 draw calls. The costly part is the reflection, which draws the scene a second time; `water.js` leaves small things out of that pass and, on slower machines, refreshes it every other frame.
-- If frames run slow, `main.js` lowers the resolution and then turns shadows off on its own.
+- There are still no image or model files. Surfaces are canvas textures painted in `tex.js`; foliage is cards cut from one painted sheet, lit softly and swayed in the vertex shader.
+- The frame is drawn into a floating-point target and finished in `post.js`. Mist is computed from depth and thins with height, so it lies on the water and clears by the rooftops.
+- Scenery is merged or instanced, about 125 draw calls and two million triangles a frame across the main, reflection and shadow passes. `water.js` leaves small things out of the reflection and, on slower machines, refreshes it every other frame.
+- Quality steps down on its own when frames run slow: first resolution, then shadows and the whole lens pass.
 - A flying duck is kept above the ground, roofs and bridge decks by `clearance()` in `main.js`; trees are not obstacles.
 - The game has only been checked in headless Chrome with software rendering. Frame rate and the feel of the flight controls on real hardware have not been measured.
 
@@ -91,7 +97,7 @@ These confirm, for several seeds, that the river is one navigable loop, that not
 
 ## Deploy
 
-Serve `dist/` from any static host. For Cloudflare Pages: framework preset none, build command `exit 0`, output directory `dist`.
+Serve `dist/` from any static host; there is nothing to build.
 
 ## Credits
 

@@ -3,19 +3,19 @@
 import * as THREE from 'three';
 
 const C = (hex) => new THREE.Color(hex);
-// hour, sky top, horizon, fog, sunlight colour, sun strength, ambient strength, fog density
+// hour, sky top, horizon, fog, sunlight colour, sun strength, ambient strength, fog density, low mist
 const KEYS = [
-  [0.0, '#0e1a34', '#24364f', '#1c2c42', '#9db4e0', 0.5, 0.9, 0.0075],
-  [4.6, '#18233e', '#394862', '#2a384e', '#8ea6d6', 0.4, 0.9, 0.0095],
-  [5.8, '#6c84a6', '#f1b79c', '#c8b2b4', '#ffae88', 0.7, 0.95, 0.0135],
-  [7.2, '#8db2cf', '#f4e2c8', '#dde0d6', '#ffe1ba', 1.15, 1.1, 0.0105],
-  [10.0, '#7bb0dc', '#dbe9ea', '#d2e2e2', '#fff4e0', 1.5, 1.15, 0.0056],
-  [14.0, '#76acde', '#d6e6ec', '#cee0e6', '#fff6e6', 1.55, 1.15, 0.005],
-  [17.0, '#7c9dc8', '#f7d8a4', '#e6d1ae', '#ffd096', 1.4, 1.05, 0.006],
-  [18.6, '#56598c', '#f89866', '#c88d7c', '#ff8a58', 0.8, 0.82, 0.0075],
-  [19.8, '#1d284c', '#48486c', '#333a56', '#8ea6d6', 0.3, 0.85, 0.0078],
-  [24.0, '#0e1a34', '#24364f', '#1c2c42', '#9db4e0', 0.5, 0.9, 0.0075],
-].map((k) => ({ h: k[0], top: C(k[1]), hor: C(k[2]), fog: C(k[3]), sun: C(k[4]), sunI: k[5], amb: k[6], dens: k[7] }));
+  [0.0, '#0e1a34', '#24364f', '#1c2c42', '#9db4e0', 0.5, 0.9, 0.0075, 0.011],
+  [4.6, '#18233e', '#394862', '#2a384e', '#8ea6d6', 0.4, 0.9, 0.0095, 0.017],
+  [5.8, '#6c84a6', '#f1b79c', '#c8b2b4', '#ffae88', 0.7, 0.95, 0.0135, 0.03],
+  [7.2, '#8db2cf', '#f4e2c8', '#dde0d6', '#ffe1ba', 1.15, 1.1, 0.0105, 0.022],
+  [10.0, '#7bb0dc', '#dbe9ea', '#d2e2e2', '#fff4e0', 1.5, 1.15, 0.0056, 0.006],
+  [14.0, '#76acde', '#d6e6ec', '#cee0e6', '#fff6e6', 1.55, 1.15, 0.005, 0.004],
+  [17.0, '#7c9dc8', '#f7d8a4', '#e6d1ae', '#ffd096', 1.4, 1.05, 0.006, 0.007],
+  [18.6, '#56598c', '#f89866', '#c88d7c', '#ff8a58', 0.8, 0.82, 0.0075, 0.013],
+  [19.8, '#1d284c', '#48486c', '#333a56', '#8ea6d6', 0.3, 0.85, 0.0078, 0.012],
+  [24.0, '#0e1a34', '#24364f', '#1c2c42', '#9db4e0', 0.5, 0.9, 0.0075, 0.011],
+].map((k) => ({ h: k[0], top: C(k[1]), hor: C(k[2]), fog: C(k[3]), sun: C(k[4]), sunI: k[5], amb: k[6] * (k[0] > 5.5 && k[0] < 19 ? 1.22 : 1.1), dens: k[7] * 0.8, mist: k[8] }));
 
 const SKY_FRAG = /* glsl */ `
 uniform vec3 uTop, uHor, uSunCol, uSunDir, uMoonDir; uniform float uNight, uTime, uCloud;
@@ -57,6 +57,7 @@ export class Env {
     this.sunDir = new THREE.Vector3(0, 1, 0);
     this.lightDir = new THREE.Vector3(0, 1, 0);
     this.fogColor = C('#dde0d6');
+    this.mistColor = C('#dde0d6'); this.mist = 0.02;
     this.top = C(0); this.hor = C(0); this.sunCol = C(0);
     this.moonDir = new THREE.Vector3(0.45, 0.5, -0.6).normalize();
 
@@ -141,7 +142,9 @@ export class Env {
     this.sunCol.lerpColors(a.sun, b.sun, t);
     const sunI = (a.sunI + (b.sunI - a.sunI) * t) * (1 - wet * 0.7), amb = a.amb + (b.amb - a.amb) * t;
     this.scene.fog.color.copy(this.fogColor);
-    this.scene.fog.density = a.dens + (b.dens - a.dens) * t + wet * 0.0045;
+    this.scene.fog.density = a.dens + (b.dens - a.dens) * t + wet * 0.0035;
+    this.mist = a.mist + (b.mist - a.mist) * t + wet * 0.014;
+    this.mistColor.copy(this.fogColor).lerp(this.hor, 0.35).multiplyScalar(1.04);
 
     const day = (this.hour - 5.4) / 13.8, el = Math.sin(day * Math.PI), az = -0.5 + day * (Math.PI + 1);
     this.sunDir.set(Math.cos(az) * Math.cos(el * 0.95), Math.sin(el * 0.95), Math.sin(az) * Math.cos(el * 0.95) * 0.8 - 0.35).normalize();
@@ -153,7 +156,7 @@ export class Env {
     this.sun.target.position.copy(focus);
     this.sun.position.copy(focus).addScaledVector(this.lightDir, 120);
     this.hemi.color.copy(this.top).lerp(C('#ffffff'), 0.45);
-    this.hemi.groundColor.copy(this.fogColor).lerp(C('#8c8f78'), 0.35);
+    this.hemi.groundColor.copy(this.fogColor).lerp(C('#b3ad94'), 0.45);      // light bounced up off water and paving
     this.hemi.intensity = amb * (1 - wet * 0.15);
 
     this.skyU.uNight.value = this.night; this.skyU.uTime.value = this.time; this.skyU.uCloud.value = wet;

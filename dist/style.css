@@ -13,7 +13,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #cfd6cc; ove
 #game canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
 #game canvas:active { cursor: grabbing; }
 #veil { position: fixed; inset: 0; pointer-events: none; transition: background 1.6s;
-  background: radial-gradient(ellipse at 50% 45%, transparent 55%, rgba(10, 18, 16, .34) 100%); }
+  background: none; }
 body.title #veil { background: linear-gradient(90deg, rgba(14, 22, 20, .62), rgba(14, 22, 20, .12) 62%, transparent); }
 body.flash #veil { background: rgba(255, 255, 255, .7); transition: none; }
 
