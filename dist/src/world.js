@@ -160,7 +160,7 @@ export function makeWorld(seed = 'jiangnan') {
     const u = uAt(x, z), d = sdf(x, z);
     const zone = 1 - zoneWeight(u, 'bamboo', 0.02) - zoneWeight(u, 'marsh', 0.02);
     const town = zoneWeight(u, 'village') * (1 - smooth(34, 50, d));
-    const w = outside(x, z) ? Math.max(0, zone - town) * smooth(3.5, 7, d) : 0;
+    const w = Math.max(0, zone - town) * smooth(3.5, 7, d) * smooth(70, 100, Math.hypot(x, z));      // farmland everywhere except the hill
     const ix = Math.floor(x / FX), iz = Math.floor(z / FZ);
     const ridge = Math.abs(x - Math.round(x / FX) * FX) < 0.1 || Math.abs(z - Math.round(z / FZ) * FZ) < 0.1;
     return { w, kind: Math.floor(hash(ix * 7 + 3, iz * 13 + 1) * 4), ridge };
@@ -173,7 +173,7 @@ export function makeWorld(seed = 'jiangnan') {
     let h = 0.1 + 0.5 * smooth(0, 4.5, d) + 0.55 * smooth(4, 30, d) + rough * smooth(7, 38, d);
     if (!outside(x, z)) h += 2.2 * smooth(20, 40, d);
     h = lerp(h, 0.82, zoneWeight(u, 'village') * (1 - smooth(30, 55, d)) * smooth(0, 0.6, d));
-    h = lerp(h, f.ridge ? 0.62 : [0.5, 0.36, 1.3, 0.42][f.kind], f.w);
+    h = lerp(h, f.ridge ? 0.62 : [0.5, 0.36, 0.5, 0.42][f.kind], f.w);
     return Math.max(0.1, h) + 15 * Math.exp(-(x * x + z * z) / 2600);     // land never dips below the waterline
   };
 

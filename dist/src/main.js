@@ -7,6 +7,7 @@ import { createScenery } from './scenery.js';
 import { makeDuck, poseWings } from './duck.js';
 import { createLife } from './life.js';
 import { createAudio } from './audio.js';
+import { createPost } from './post.js';
 import { windTime } from './build.js';
 import { STR, JOURNAL, STAMPS, CURIOS } from './text.js';
 
@@ -43,9 +44,12 @@ const coarse = matchMedia('(pointer: coarse)').matches;
 let renderer;
 try { renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' }); }
 catch (err) { $('#start').textContent = 'WebGL is unavailable in this browser.'; throw err; }
-let quality = coarse ? 1 : 2;
-let water;
-const applyQuality = () => { renderer.setPixelRatio(Math.min(devicePixelRatio, [1, 1.3, 2][quality])); env.sun.castShadow = quality > 0; if (water) water.half = quality < 2; };
+const hdr = renderer.extensions.has('EXT_color_buffer_float') || renderer.extensions.has('EXT_color_buffer_half_float');
+let quality = !hdr ? 0 : coarse ? 1 : 2;      // without float render targets there is no lens pass at all
+let water, post;
+// Three steps of quality. The lowest drops the lens effects and shadows altogether.
+const applyQuality = () => { renderer.setPixelRatio(Math.min(devicePixelRatio, [1, 1.25, 2][quality])); env.sun.castShadow = quality > 0; if (water) water.half = quality < 2; post?.setSize(); };
+const draw = (under) => (quality > 0 ? post.render(scene, camera, env, under) : (renderer.setRenderTarget(null), renderer.render(scene, camera)));
 renderer.setSize(innerWidth, innerHeight);
 renderer.toneMapping = THREE.NeutralToneMapping; renderer.toneMappingExposure = 0.92;
 renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -57,6 +61,7 @@ camera.rotation.order = 'YXZ';
 const env = new Env(scene, rng(seed + ':weather'));
 applyQuality();
 water = createWater(world, scene, quality);
+post = createPost(renderer);
 const scenery = createScenery(world, scene);
 water.skip.push(...scenery.small);
 
@@ -215,7 +220,7 @@ const act = {
   dive: goUnder,
   drift() { if (p.air || p.under) return; p.drift = !p.drift; toast(p.drift ? S.driftOn : S.driftOff, 2600); },
   photo() {
-    renderer.render(scene, camera);
+    draw(camera.position.y < 0);
     const src = renderer.domElement, c = document.createElement('canvas'), w = Math.min(1600, src.width), h = Math.round((w * src.height) / src.width);
     c.width = w; c.height = h;
     const x = c.getContext('2d'); x.drawImage(src, 0, 0, w, h);
@@ -294,7 +299,7 @@ function begin() {
 $('#start').onclick = begin;
 
 addEventListener('resize', () => {
-  renderer.setSize(innerWidth, innerHeight);
+  renderer.setSize(innerWidth, innerHeight); post.setSize();
   camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
 });
 
@@ -404,7 +409,7 @@ function move(dt) {
 
 // ---- frame -----------------------------------------------------------------------------------
 const focus = new THREE.Vector3(), underFog = new THREE.Color('#7fb08a');
-let last = performance.now(), slow = 0, frames = 0, clockTimer = 0, beat = 0;
+let last = performance.now(), slow = 0, frames = 0, clockTimer = 0, beat = 0, air = 0;
 function frame(now) {
   requestAnimationFrame(frame);
   const dt = clamp((now - last) / 1000, 0, 0.05); last = now;      // the first timestamp can predate start-up
@@ -413,7 +418,7 @@ function frame(now) {
   focus.set(p.x, 0, p.z);
   env.update(started ? dt : dt * 0.3, focus);
   water.update(env, focus, dt);
-  scenery.update(env);
+  scenery.update(env, dt);
   life.update(dt, p);
 
   // the duck: bobbing, rocking with each stroke, banking in the air, head held steady the way birds do
@@ -444,11 +449,12 @@ function frame(now) {
   head.position.z = 0.14 + (p.air ? 0.03 : Math.sin(ph * 2 + 0.6) * 0.006 * sp);
   me.visible = kk < 0.2;
 
-  // the camera, strapped between the wings
+  // the camera, strapped between the wings (it rides a little higher and further back in the air)
+  air += ((p.air ? 1 : 0) - air) * Math.min(1, dt * 3);
   if (!drag && (look.idle += dt) > 2.5 && Math.abs(p.speed) > 0.2) { const e = Math.min(1, dt * 0.9); look.yaw -= look.yaw * e; look.pitch -= look.pitch * e; }
-  let cy = p.alt + 0.43 + bob * 1.5 - kk * 0.88;
+  let cy = p.alt + 0.43 + bob * 1.5 - kk * 0.88 + air * 0.1;
   if (kk > 0.5) cy = Math.max(cy, world.height(p.x, p.z) + 0.22);
-  const cz = -0.27 + kk * 0.45 - (p.air ? 0.05 : 0), cx = p.air ? 0 : Math.sin(ph) * 0.004 * sp;
+  const cz = -0.27 + kk * 0.45 - air * 0.1, cx = p.air ? 0 : Math.sin(ph) * 0.004 * sp;
   const sh = Math.sin(p.heading), ch = Math.cos(p.heading);
   camera.position.set(p.x + sh * cz - ch * cx, cy, p.z + ch * cz + sh * cx);
   const titleYaw = started ? 0 : 0.42;
@@ -464,7 +470,7 @@ function frame(now) {
   $('#breath').classList.toggle('on', p.under);
   if (p.under) $('#breath i').style.transform = `scaleX(${clamp(p.breath / 8, 0, 1)})`;
 
-  renderer.render(scene, camera);
+  draw(under);
 
   if ((clockTimer -= dt) < 0) {
     clockTimer = 0.5; $('#clock').textContent = clock();
